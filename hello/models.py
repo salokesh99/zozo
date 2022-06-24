@@ -1,5 +1,6 @@
 from pyexpat import model
-from wsgiref.util import shift_path_info
+# from tkinter import SE
+# from wsgiref.util import shift_path_info
 from django.db import models
 
 
@@ -8,40 +9,40 @@ class User(models.Model):
     username = models.CharField(unique=True, max_length=30)
     password = models.CharField(max_length=18)
     employee_id = models.CharField(unique=True, max_length=18)
-    mobile_number = models.CharField(max_length=13)
+    country_code = models.CharField( max_length=3)
+    mobile_number = models.CharField( max_length=13)
     email_id = models.EmailField(unique=True, max_length=75)
     first_name = models.CharField(max_length=30)  
     last_name = models.CharField(max_length=30) 
-    department =  models.ForeignKey('Department')
+    department =  models.ForeignKey('Department', null=True, on_delete=models.SET_NULL)
     date_of_joining = models.DateTimeField()
-    last_working_day = models.DateTimeField()
-    # shift = 'options_field'
-    # role = 'options field'
-
+    last_working_day = models.DateTimeField(null=True)
+    shift = models.ForeignKey('Shift',null=True, on_delete=models.SET_NULL)
+    role = models.ForeignKey('Role', null=True, on_delete=models.SET_NULL)
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     is_archive = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_edited = models.BooleanField(default=False)
 
 
 class Ticket(models.Model):
 
-    uuid = models.AutoField()
-    manual_id = models.IntegerField(default=1)
-    title = models.CharField(max_length=200)
-    description = models.CharField(max_length=2000)
-    # attachments = models.FileField(upload_to ='uploads/')
-    # status = 'optional_field'
-    #  to be presented in Name and email format only
-    reported_by = models.ForeignKey(User)
-    assigned_to = models.ForeignKey(User)
-    reporter_department = models.ForeignKey('Department')
-    assignee_department = models.ForeignKey('Department')
-    # help_topics = 'to be decided from a pool of options of help topics 
+    uuid = models.CharField(max_length=90)
+    manual_id = models.IntegerField()
+    title = models.CharField( max_length=200)
+    description = models.TextField(max_length=3000)
+    attachments = models.ForeignKey('Attachment', null=True, on_delete=models.SET_NULL )
+    status = models.ForeignKey('Status', null=True, on_delete=models.SET_NULL)
+    reported_by = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, related_name='tickets_reported')
+    assigned_to = models.ForeignKey(User, null=True, on_delete=models.SET_NULL,  related_name='tickets_assigned',)
+    reporter_department = models.ForeignKey('Department', null=True, on_delete=models.SET_NULL, related_name='reported_issues')
+    assignee_department = models.ForeignKey('Department', null=True, on_delete=models.SET_NULL, related_name='assigned_issues')
+    help_topics = models.ForeignKey('HelpTopic', null=True, on_delete=models.SET_NULL)
     # tags = 'multiple individual words'
-    # severity = 'to be chosen from severity options'
-    # priority = 'to be chosen from priority options'
+    severity = models.ForeignKey('Severity', null=True, on_delete=models.SET_NULL)
+    priority = models.ForeignKey('Priority', null=True, on_delete=models.SET_NULL)
 
 
 class Attachment(models.Model):
@@ -60,19 +61,17 @@ class Attachment(models.Model):
 
 class Department(models.Model):
     name = models.CharField(max_length=128)
-    size = models.CharField(max_length=128)
-    address = models.CharField(max_length=128)
+    size = models.CharField(null=True,max_length=128)
+    address = models.CharField(null=True, max_length=128)
     contact_person = models.CharField(max_length=128)
-    contact_number = models.CharField(max_length=128)
+    country_code = models.CharField( max_length=3)
+    contact_number = models.CharField( max_length=13)
     email_id = models.EmailField(unique=True, max_length=75)
-    manager = models.ForeignKey(User)
+    manager = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, related_name='manager')
     manager_email_id = models.EmailField(unique=True, max_length=75)
-    Manager_contact = models.IntegerField()
-    members = models.ManyToManyField(
-        User,
-        through='Membership',
-        through_fields=('user', 'person'),
-    )
+    Manager_contact = models.IntegerField(null=True)
+    manager_country_code = models.CharField(null=True, max_length=3)
+    members = models.ManyToManyField(User, related_name='departments')
 
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
@@ -92,16 +91,16 @@ class Department(models.Model):
             if last_id is not None:
                 self.manual_id = last_id + 1
 
-        super(Tickets, self).save(*args, **kwargs)
+        super(Ticket, self).save(*args, **kwargs)
 
 
 class Comment(models.Model):
-    title = models.CharField(max_length=75)
-    description = models.TextField(max_length=2000)
+    # title = models.CharField(max_length=75)
+    description = models.TextField(null=True, max_length=2000)
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
     created_on = models.DateTimeField(auto_now_add=True)
-    attachments = models.FileField(upload_to ='uploads/')
-    author = models.ForeignKey(User)
+    attachments = models.FileField(null=True,upload_to ='uploads/')
+    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
@@ -112,10 +111,10 @@ class Comment(models.Model):
 
 
 class Templates(models.Model):
-    title = models.CharField(max_length=75)
-    description = models.TextField(max_length=2000)
-    department = models.ForeignKey('Department')
-    author = models.ForeignKey(User)
+    title = models.CharField(null=True, max_length=75)
+    description = models.TextField(null=True, max_length=200)
+    department = models.ForeignKey('Department', null=True, on_delete=models.SET_NULL)
+    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     last_used_at = models.DateTimeField(auto_now_add=True)
 
     # Regular Fields
@@ -125,10 +124,11 @@ class Templates(models.Model):
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
 
-class HelpTopics(models.Model):
-    title = models.CharField(max_length=200)
-    pub_date = models.DateTimeField('date published')
-    author = models.ForeignKey(User)
+class HelpTopic(models.Model):
+    title = models.CharField(null=True, max_length=75)
+    pub_date = models.DateTimeField()
+    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    department = models.ForeignKey('Department',  null=True, on_delete=models.SET_NULL)
 
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
@@ -139,10 +139,10 @@ class HelpTopics(models.Model):
 
 
 class Shift(models.Model):
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=75)
     start_time = models.TimeField()
     end_time = models.TimeField()
-    author = models.ForeignKey(User)
+    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, related_name='current_shift')
 
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
@@ -151,10 +151,10 @@ class Shift(models.Model):
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
 
-class Roles(models.Model):
-    title = models.CharField(max_length=200)
-    pub_date = models.DateTimeField('date published')
-    author = models.ForeignKey(User)
+class Role(models.Model):
+    title = models.CharField(max_length=75)
+    pub_date = models.DateTimeField(null=True,)
+    author = models.ForeignKey(User, null=True, related_name='user_role', on_delete=models.SET_NULL)
 
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
@@ -165,9 +165,9 @@ class Roles(models.Model):
 
 
 class Priority(models.Model):
-    title = models.CharField(max_length=200)
-    pub_date = models.DateTimeField('date published')
-    author = models.ForeignKey(User)
+    title = models.CharField(max_length=20)
+    pub_date = models.DateTimeField()
+    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
@@ -178,9 +178,22 @@ class Priority(models.Model):
 
 
 class Severity(models.Model):
-    title = models.CharField(max_length=200)
-    pub_date = models.DateTimeField('date published')
-    author = models.ForeignKey(User)
+    title = models.CharField(max_length=20)
+    # pub_date = models.DateTimeField('date published')
+    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+
+    # Regular Fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    is_edited = models.BooleanField(default=False)
+    is_archive = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
+
+
+class Status(models.Model):
+    title = models.CharField(max_length=30)
+    # pub_date = models.DateTimeField()
+    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
@@ -192,7 +205,7 @@ class Severity(models.Model):
 
 
 
-
+# Tags to be introduced.
 
 
 
