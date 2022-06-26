@@ -1,11 +1,9 @@
 from pyexpat import model
-# from tkinter import SE
-# from wsgiref.util import shift_path_info
 from django.db import models
 
 
-
 class User(models.Model):
+
     username = models.CharField(unique=True, max_length=30)
     password = models.CharField(max_length=18)
     employee_id = models.CharField(unique=True, max_length=18)
@@ -15,7 +13,7 @@ class User(models.Model):
     first_name = models.CharField(max_length=30)  
     last_name = models.CharField(max_length=30) 
     department =  models.ForeignKey('Department', null=True, on_delete=models.SET_NULL)
-    date_of_joining = models.DateTimeField()
+    date_of_joining = models.DateTimeField(null=True)
     last_working_day = models.DateTimeField(null=True)
     shift = models.ForeignKey('Shift',null=True, on_delete=models.SET_NULL)
     role = models.ForeignKey('Role', null=True, on_delete=models.SET_NULL)
@@ -25,6 +23,12 @@ class User(models.Model):
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_edited = models.BooleanField(default=False)
+
+    class Meta:  
+        db_table = "user"  
+    
+    def __str__(self):
+        return self.username
 
 
 class Ticket(models.Model):
@@ -43,23 +47,39 @@ class Ticket(models.Model):
     # tags = 'multiple individual words'
     severity = models.ForeignKey('Severity', null=True, on_delete=models.SET_NULL)
     priority = models.ForeignKey('Priority', null=True, on_delete=models.SET_NULL)
-
-
-class Attachment(models.Model):
-    name = models.CharField(max_length=128)
-    size = models.CharField(max_length=128)
-    file_type = models.CharField(max_length=128)
-    file_path = models.CharField(max_length=128)
-    is_edited = models.BooleanField(default=False)
-
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
 
+    class Meta:  
+        db_table = "ticket"
+    
+    def __str__(self):
+        return self.manual_id
+
+class Attachment(models.Model):
+
+    name = models.CharField(max_length=128)
+    size = models.CharField(max_length=128)
+    file_type = models.CharField(max_length=128)
+    file_path = models.CharField(max_length=128)
+    is_edited = models.BooleanField(default=False)
+    # Regular Fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    is_archive = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
+
+    class Meta:  
+        db_table = "attachment"
+    
+    def __str__(self):
+        return self.name
 
 class Department(models.Model):
+
     name = models.CharField(max_length=128)
     size = models.CharField(null=True,max_length=128)
     address = models.CharField(null=True, max_length=128)
@@ -72,13 +92,17 @@ class Department(models.Model):
     Manager_contact = models.IntegerField(null=True)
     manager_country_code = models.CharField(null=True, max_length=3)
     members = models.ManyToManyField(User, related_name='departments')
-
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
 
+    class Meta:  
+        db_table = "department"  
+
+    def __str__(self):
+        return self.name
 
     def save(self, *args, **kwargs):
         # This means that the model isn't saved to the database yet
@@ -95,13 +119,13 @@ class Department(models.Model):
 
 
 class Comment(models.Model):
+
     # title = models.CharField(max_length=75)
     description = models.TextField(null=True, max_length=2000)
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
     created_on = models.DateTimeField(auto_now_add=True)
     attachments = models.FileField(null=True,upload_to ='uploads/')
     author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
-
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
@@ -109,20 +133,27 @@ class Comment(models.Model):
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
 
+    class Meta:  
+        db_table = "comment"  
 
-class Templates(models.Model):
+
+class Template(models.Model):
+
     title = models.CharField(null=True, max_length=75)
     description = models.TextField(null=True, max_length=200)
     department = models.ForeignKey('Department', null=True, on_delete=models.SET_NULL)
     author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     last_used_at = models.DateTimeField(auto_now_add=True)
-
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     is_edited = models.BooleanField(default=False)
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
+
+    class Meta:  
+        db_table = "templates"  
+
 
 class HelpTopic(models.Model):
     title = models.CharField(null=True, max_length=75)
@@ -137,13 +168,15 @@ class HelpTopic(models.Model):
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
 
+    class Meta:  
+        db_table = "helptopic"  
 
 class Shift(models.Model):
+
     title = models.CharField(max_length=75)
     start_time = models.TimeField()
     end_time = models.TimeField()
     author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, related_name='current_shift')
-
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
@@ -151,11 +184,14 @@ class Shift(models.Model):
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
 
+    class Meta:  
+        db_table = "shift"  
+
 class Role(models.Model):
+
     title = models.CharField(max_length=75)
     pub_date = models.DateTimeField(null=True,)
     author = models.ForeignKey(User, null=True, related_name='user_role', on_delete=models.SET_NULL)
-
     # Regular Fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
@@ -163,57 +199,158 @@ class Role(models.Model):
     is_archive = models.BooleanField(default=False)
     is_active = models.BooleanField(default=False)
 
+    class Meta:  
+        db_table = "role"  
 
-class Priority(models.Model):
-    title = models.CharField(max_length=20)
-    pub_date = models.DateTimeField()
-    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
-    # Regular Fields
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
-    is_edited = models.BooleanField(default=False)
-    is_archive = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
+# https://docs.djangoproject.com/en/4.0/ref/models/fields/
+# https://stackoverflow.com/questions/18676156/how-to-properly-use-the-choices-field-option-in-django
+class Status(models.Model):
+
+    NEW = 'NEW'
+    ONGOING = 'ONG'
+    PENDING = 'PEN'
+    WAITING = 'WIT'
+    SNOOZE = 'SNZ'
+    BLOCKED = 'BLK'
+    RESOLVED = 'RES'
+    CLOSED = 'CLS'
+    DUPLICATE = 'DPL'
+
+    STATUS_CHOICES = [
+        (NEW, 'New'),
+        (ONGOING, 'Ongoing'),
+        (PENDING, 'Pending'),
+        (WAITING, 'Waiting'),
+        (SNOOZE, 'Snooze'),
+        (BLOCKED, 'Blocked'),
+        (RESOLVED, 'Resolved'),
+        (CLOSED, 'Closed'),
+        (DUPLICATE, 'Duplicate')
+    ]
+
+    status = models.CharField(
+        max_length=3,
+        choices=STATUS_CHOICES,
+        default=NEW 
+    )
+
+    class Meta:  
+        db_table = "status"  
 
 
 class Severity(models.Model):
-    title = models.CharField(max_length=20)
-    # pub_date = models.DateTimeField('date published')
-    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
-    # Regular Fields
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
-    is_edited = models.BooleanField(default=False)
-    is_archive = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
+    S1 = 'S1'
+    S2 = 'S2'
+    S3 = 'S3'
+    S4 = 'S4'
 
+    SEVERITY = [
+        (S1, 'S1'),
+        (S2, 'S2'),
+        (S3, 'S3'),
+        (S4, 'S4')
+    ]
 
-class Status(models.Model):
-    title = models.CharField(max_length=30)
-    # pub_date = models.DateTimeField()
-    author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    severity = models.CharField(
+        max_length=2,
+        choices=SEVERITY,
+        default=S1 
+    )
 
-    # Regular Fields
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
-    is_edited = models.BooleanField(default=False)
-    is_archive = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
+    class Meta:  
+        db_table = "severity"  
 
 
+class Priority(models.Model):
+
+    P1 = 'P0'
+    P2 = 'P1'
+    P3 = 'P2'
+    P4 = 'P3'
+
+    PRIORITY = [
+        (P1, 'P0'),
+        (P2, 'P1'),
+        (P3, 'P2'),
+        (P4, 'P3')
+    ]
+
+    priority = models.CharField(
+        max_length=2,
+        choices=PRIORITY,
+        default=P1
+    )
+
+    class Meta:  
+        db_table = "priority"  
+
+
+
+################################################################################
+###############################################################################
+# helpful in dev
+
+# class Priority(models.Model):
+#     title = models.CharField(max_length=20)
+#     pub_date = models.DateTimeField()
+#     author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+
+#     # Regular Fields
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now_add=True)
+#     is_edited = models.BooleanField(default=False)
+#     is_archive = models.BooleanField(default=False)
+#     is_active = models.BooleanField(default=False)
+
+
+# class Severity(models.Model):
+#     title = models.CharField(max_length=20)
+#     # pub_date = models.DateTimeField('date published')
+#     author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+
+#     # Regular Fields
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now_add=True)
+#     is_edited = models.BooleanField(default=False)
+#     is_archive = models.BooleanField(default=False)
+#     is_active = models.BooleanField(default=False)
+
+
+# class Status(models.Model):
+#     title = models.CharField(max_length=30)
+#     # pub_date = models.DateTimeField()
+#     author = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+
+#     # Regular Fields
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now_add=True)
+#     is_edited = models.BooleanField(default=False)
+#     is_archive = models.BooleanField(default=False)
+#     is_active = models.BooleanField(default=False)
+
+# class Status(models.TextChoices):
+#     UNSTARTED = 'u', "Not started yet"
+#     ONGOING = 'o', "Ongoing"
+#     FINISHED = 'f', "Finished"
+#     Created = 'Created'
+
+# class YearInSchool(models.TextChoices):
+#     FRESHMAN = 'FR', 'Freshman'
+#     SOPHOMORE = 'SO', 'Sophomore'
+#     JUNIOR = 'JR', 'Junior'
+#     SENIOR = 'SR', 'Senior'
+#     GRADUATE = 'GR', 'Graduate'
+
+#     year_in_school = models.CharField(
+#         max_length=2,
+#         choices=YearInSchool.choices,
+#         default=YearInSchool.SOPHOMORE,
+#     )
 
 
 # Tags to be introduced.
-
-
-
-
-
-
-
-
 # ++++++++++++++++++++++ draft ++++++++++++++++++++++++++++#
 # class Department(models.Model):
 
@@ -323,3 +460,14 @@ class Status(models.Model):
 #     )
 #     invite_reason = models.CharField(max_length=64)
     
+
+
+
+# (username='loke@123',
+# password='welcome@123',
+# employee_id='SSN0123',
+# country_code = '+91',
+# mobile_number = '8050408646',
+# email_id = 'salokesh99@gmail.com',
+# first_name = 'lokesh',
+# last_name = 'ajja' )
